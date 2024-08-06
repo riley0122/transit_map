@@ -59,7 +59,7 @@ class TransitMapApp {
 
     private isDragging: boolean = false;
     private dragStart: {x: number, y: number};
-    public zoom: number = 0;
+    public zoom: number = 1;
 
     private isInitialDraw: boolean = true;
 
@@ -89,7 +89,7 @@ class TransitMapApp {
         canvas.addEventListener("mousedown", this.mouseDownHandler.bind(this));
         canvas.addEventListener("mousemove", this.mouseMoveHandler.bind(this));
         canvas.addEventListener("mouseup", this.mouseUpHandler.bind(this));
-        canvas.addEventListener("scroll", this.scrollHandler.bind(this))
+        canvas.addEventListener("wheel", this.scrollHandler.bind(this))
 
         // Touch is a little broken
         canvas.addEventListener("touchstart", this.mouseDownHandler.bind(this));
@@ -116,10 +116,13 @@ class TransitMapApp {
         for (const line of lines) {
             if (!line.getStations[0]) continue;
 
-            context.moveTo(line.getStations[0].x + horizontalDisplacement, line.getStations[0].y + verticalDisplacement);
+            context.moveTo(
+                (line.getStations[0].x + horizontalDisplacement) * this.zoom,
+                (line.getStations[0].y + verticalDisplacement) * this.zoom
+            );
 
             context.beginPath();
-            context.lineWidth = this.stationRadius;
+            context.lineWidth = this.stationRadius * this.zoom;
 
             for (const station of line.getStations) {
                 if (!stations.some(s => s === station)) {
@@ -127,10 +130,11 @@ class TransitMapApp {
                     continue;
                 };
 
-                context.lineTo(station.x + horizontalDisplacement, station.y + verticalDisplacement);
+                context.lineTo(
+                    (station.x + horizontalDisplacement) * this.zoom,
+                    (station.y + verticalDisplacement) * this.zoom
+                    );
             }
-
-            console.log(line);
 
             context.strokeStyle = line.colour;
             context.stroke();
@@ -145,12 +149,12 @@ class TransitMapApp {
 
             context.beginPath();
             context.fillStyle = this.stationBorderColour;
-            context.arc(drawX, drawY, this.stationRadius + this.stationBorderWidth * 2, 0, 2 * Math.PI, true);
+            context.arc(drawX * this.zoom, drawY * this.zoom, (this.stationRadius + this.stationBorderWidth * 2) * this.zoom, 0, 2 * Math.PI, true);
             context.fill();
 
             context.beginPath();
             context.fillStyle = this.stationColour;
-            context.arc(drawX, drawY, this.stationRadius, 0, 2 * Math.PI, true);
+            context.arc(drawX * this.zoom, drawY * this.zoom, this.stationRadius*this.zoom, 0, 2 * Math.PI, true);
             context.fill();
         }
 
@@ -175,8 +179,8 @@ class TransitMapApp {
             y: event.clientY,
         }
 
-        let deltaX = dragEnd.x - this.dragStart.x;
-        let deltaY = dragEnd.y - this.dragStart.y;
+        let deltaX = (dragEnd.x - this.dragStart.x) / this.zoom;
+        let deltaY = (dragEnd.y - this.dragStart.y) / this.zoom;
 
         MapCenter.x += deltaX;
         MapCenter.y += deltaY;
@@ -194,8 +198,16 @@ class TransitMapApp {
         this.isDragging = false;
     }
 
-    public scrollHandler() {
-        return;
+    public scrollHandler(event: WheelEvent) {
+        const zoomFactor = 0.1;
+        if (event.deltaY > 0) {
+            this.zoom *= 1 - zoomFactor;
+        } else {
+            this.zoom *= 1 + zoomFactor;
+        }
+        if (this.zoom < 0.1) this.zoom = 0.1;
+        if (this.zoom > 10) this.zoom = 10;
+        this.drawMap();
     }
 
     public scaleCanvas(width: number, height: number) {

@@ -4,11 +4,36 @@ class TransitMapStation {
     private id: string;
     public name: string;
 
-    constructor(id: string, x: number, y: number, name: string) {
+    constructor(x: number, y: number, name: string) {
         this.x = x;
         this.y = y;
-        this.id = id;
+        this.id = crypto.randomUUID();
         this.name = name;
+    }
+
+    get getId() {
+        return this.id;
+    }
+}
+
+class TransitLine {
+    private stations: TransitMapStation[];
+    public name: string;
+    private id: string;
+    public colour: string;
+
+    constructor(name: string, colour: string, stations?: TransitMapStation[]) {
+        if(stations) this.stations = stations;
+        this.name = name;
+        if(this.colour) this.colour = colour;
+    }
+
+    public addStation(station: TransitMapStation) {
+        this.stations.push(station);
+    }
+
+    get getStations() {
+        return this.stations;
     }
 
     get getId() {
@@ -25,13 +50,18 @@ class TransitMapApp {
     public stationBorderColour: string = "black";
 
     public stationBorderWidth: number = 5;
+    public stationRadius: number = 20;
 
     private stations: TransitMapStation[] = [];
+    private lines: TransitLine[] = [];
 
     private MapCenter: {x: number, y: number};
 
     private isDragging: boolean = false;
     private dragStart: {x: number, y: number};
+    public zoom: number = 0;
+
+    private isInitialDraw: boolean = true;
 
     constructor(id: string) {
         let canvas = document.getElementById(id) as HTMLCanvasElement;
@@ -72,15 +102,40 @@ class TransitMapApp {
         let canvas = this.canvas;
         let stations = this.stations;
         let MapCenter = this.MapCenter;
+        let lines = this.lines;
 
         context.fillStyle = this.backgroundColour;
         context.fillRect(0, 0, canvas.width, canvas.height);
 
-        // If there aren't any stations to draw in the first place, might as well not try to draw them anyways
-        if (!stations) return;
-
         const horizontalDisplacement = MapCenter.x + canvas.width / 2;
         const verticalDisplacement = MapCenter.y + canvas.height / 2;
+
+        // Draw the lines first so they're under the stations
+        if (!lines || lines.length === 0) return;
+
+        for (const line of lines) {
+            if (!line.getStations[0]) continue;
+
+            context.moveTo(line.getStations[0].x + horizontalDisplacement, line.getStations[0].y + verticalDisplacement);
+
+            context.beginPath();
+            context.lineWidth = this.stationRadius;
+
+            for (const station of line.getStations) {
+                if (!stations.some(s => s === station)) {
+                    if (this.isInitialDraw) console.warn(`Station ${station.name} on line ${line.name} is not added on map!`)
+                    continue;
+                };
+
+                context.lineTo(station.x + horizontalDisplacement, station.y + verticalDisplacement);
+            }
+
+            context.strokeStyle = line.colour;
+            context.stroke();
+        }
+
+        // If there aren't any stations to draw in the first place, might as well not try to draw them anyways
+        if (!stations || stations.length === 0) return;
 
         for(const station of stations) {
             const drawX = station.x + horizontalDisplacement;
@@ -88,14 +143,16 @@ class TransitMapApp {
 
             context.beginPath();
             context.fillStyle = this.stationBorderColour;
-            context.arc(drawX, drawY, 20 + this.stationBorderWidth * 2, 0, 2 * Math.PI, true);
+            context.arc(drawX, drawY, this.stationRadius + this.stationBorderWidth * 2, 0, 2 * Math.PI, true);
             context.fill();
 
             context.beginPath();
             context.fillStyle = this.stationColour;
-            context.arc(drawX, drawY, 20, 0, 2 * Math.PI, true);
+            context.arc(drawX, drawY, this.stationRadius, 0, 2 * Math.PI, true);
             context.fill();
         }
+
+        this.isInitialDraw = false;
     }
 
     public mouseDownHandler(event: MouseEvent) {
@@ -150,6 +207,11 @@ class TransitMapApp {
 
     public addStation(station: TransitMapStation) {
         this.stations.push(station);
+        this.drawMap();
+    }
+
+    public addLine(line: TransitLine) {
+        this.lines.push(line);
         this.drawMap();
     }
 }

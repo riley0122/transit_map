@@ -22,10 +22,10 @@ class TransitLine {
     private id: string;
     public colour: string;
 
-    constructor(name: string, colour: string, stations?: TransitMapStation[]) {
+    constructor(name: string, colour?: string, stations?: TransitMapStation[]) {
         if(stations) this.stations = stations;
         this.name = name;
-        if(this.colour) this.colour = colour;
+        if(colour) this.colour = colour;
     }
 
     public addStation(station: TransitMapStation) {
@@ -129,6 +129,8 @@ class TransitMapApp {
 
                 context.lineTo(station.x + horizontalDisplacement, station.y + verticalDisplacement);
             }
+
+            console.log(line);
 
             context.strokeStyle = line.colour;
             context.stroke();

@@ -11,3 +11,5 @@ const MakeFullScreenMap = () => {
 
 window.addEventListener("resize", MakeFullScreenMap);
 MakeFullScreenMap();
+
+map.addStation(new TransitMapStation("a", 0, 0, "a"))

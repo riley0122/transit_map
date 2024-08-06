@@ -12,9 +12,9 @@ const MakeFullScreenMap = () => {
 window.addEventListener("resize", MakeFullScreenMap);
 MakeFullScreenMap();
 
-const leftStation = new TransitMapStation(-250, 0, "left");
-const rightStation = new TransitMapStation(250, 0, "right");
-const middleStation = new TransitMapStation(0, 300, "middle");
+const leftStation = new TransitMapStation(-250, -150, "left");
+const rightStation = new TransitMapStation(250, -150, "right");
+const middleStation = new TransitMapStation(0, 150, "middle");
 
 
 map.addStation(leftStation)
